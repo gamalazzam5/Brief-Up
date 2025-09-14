@@ -1,11 +1,8 @@
 import 'package:brief_up/screens/splash_screen.dart';
-
 import 'package:flutter/material.dart';
 
 
-
-
-void main() {
+Future<void> main() async{
   runApp(BriefUp());
 }
 

@@ -1,11 +1,31 @@
+import 'package:brief_up/data/news_repo.dart';
+import 'package:brief_up/data/news_services.dart';
+import 'package:brief_up/models/news_model.dart';
 import 'package:brief_up/widgets/custom_text_field.dart';
 import 'package:brief_up/widgets/latest_news.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../widgets/trending_card.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late Future<List<NewsModel>> _futureTrendingNews;
+  late Future<List<NewsModel>> _futureLatestNews;
+
+  @override
+  void initState() {
+    final repo = NewsRepo(service: NewsService(dio: Dio()));
+    _futureTrendingNews = repo.getNews();
+    _futureLatestNews = repo.getLatestNews();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,12 +49,56 @@ class HomeScreen extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.only(top: 40, left: 24, right: 24),
         child: SingleChildScrollView(
-          child: Column(
-            children: [
-              CustomTextFormField(hintText: 'Search'),
-              const TrendingCard(),
-              LatestNews()
-            ],
+          child: FutureBuilder<List<NewsModel>>(
+            future: _futureTrendingNews,
+            builder:
+                (
+                  BuildContext context,
+                  AsyncSnapshot<List<NewsModel>> snapshot,
+                ) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text("Error: ${snapshot.error}"));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text("No news available"));
+                  }
+
+                  final newsList = snapshot.data!;
+                  return Column(
+                    children: [
+                      CustomTextFormField(hintText: 'Search'),
+                      TrendingCard(newsList: newsList),
+                      FutureBuilder<List<NewsModel>>(
+                        future: _futureLatestNews,
+                        builder:
+                            (
+                              BuildContext context,
+                              AsyncSnapshot<List<NewsModel>> snapshot,
+                            ) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              } else if (snapshot.hasError) {
+                                return Center(
+                                  child: Text("Error: ${snapshot.error}"),
+                                );
+                              } else if (!snapshot.hasData ||
+                                  snapshot.data!.isEmpty) {
+                                return const Center(
+                                  child: Text("No news available"),
+                                );
+                              }
+
+                              final newsList = snapshot.data!;
+                              return LatestNews(newsList: newsList,);
+                            },
+                      ),
+                    ],
+                  );
+                },
           ),
         ),
       ),
