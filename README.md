@@ -1,6 +1,6 @@
 # brief_up
 
-A new Flutter project.
+A simple news app 
 
 ## Getting Started
 
